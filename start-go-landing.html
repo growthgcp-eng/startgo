@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Go — Performance para e-commerce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #0A0F1C;
+    --ink-2: #10182B;
+    --ink-3: #161F36;
+    --go: #00E676;
+    --go-dim: #00b85f;
+    --amber: #FFB300;
+    --paper: #F4F6FA;
+    --slate: #8C97AD;
+    --line: rgba(244,246,250,0.09);
+    --line-strong: rgba(244,246,250,0.16);
+
+    --font-display: 'Unbounded', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --container: 1180px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--font-body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img,svg{ display:block; max-width:100%; }
+  a{ color:inherit; text-decoration:none; }
+  ul{ list-style:none; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  ::selection{ background:var(--go); color:var(--ink); }
+
+  :focus-visible{
+    outline:2px solid var(--go);
+    outline-offset:3px;
+  }
+
+  .wrap{
+    max-width:var(--container);
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--go);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px; height:7px;
+    background:var(--go);
+    border-radius:50%;
+    box-shadow:0 0 0 4px rgba(0,230,118,.16);
+  }
+
+  /* ---------- background texture: starting grid ---------- */
+  .grid-texture{
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(115deg, rgba(244,246,250,0.035) 0 2px, transparent 2px 26px);
+    pointer-events:none;
+  }
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,15,28,0.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px;
+    max-width:var(--container);
+    margin:0 auto;
+  }
+  .logo{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:19px;
+    letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .dot{ color:var(--go); }
+  .nav-links{ display:flex; gap:34px; }
+  .nav-links a{
+    font-size:14.5px; color:var(--slate); font-weight:500;
+    transition:color .2s ease;
+  }
+  .nav-links a:hover{ color:var(--paper); }
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--go); color:var(--ink);
+    font-weight:600; font-size:14px;
+    padding:10px 18px; border-radius:100px;
+    border:none;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .nav-cta:hover{ transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(0,230,118,.55); }
+  .nav-toggle{ display:none; }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:96px 0 60px;
+    overflow:hidden;
+  }
+  .hero-inner{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:56px;
+    align-items:center;
+  }
+  .hero h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(38px, 4.6vw, 62px);
+    line-height:1.05;
+    letter-spacing:-0.015em;
+    margin:20px 0 22px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--go);
+  }
+  .hero p.lede{
+    font-size:18px;
+    color:var(--slate);
+    max-width:480px;
+    margin-bottom:34px;
+  }
+  .cta-row{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+
+  .btn-go{
+    position:relative;
+    display:inline-flex; align-items:center; gap:10px;
+    background:var(--go); color:var(--ink);
+    font-weight:600; font-size:15.5px;
+    padding:15px 26px; border-radius:100px;
+    border:none;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .btn-go:hover{ transform:translateY(-2px); box-shadow:0 14px 34px -10px rgba(0,230,118,.6); }
+  .btn-go .pulse{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--ink);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:.4; transform:scale(.75); }
+  }
+  .link-ghost{
+    font-size:14.5px; font-weight:600; color:var(--paper);
+    border-bottom:1px solid var(--line-strong);
+    padding-bottom:3px;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .link-ghost:hover{ border-color:var(--go); color:var(--go); }
+
+  /* ---------- console mock (signature element) ---------- */
+  .console{
+    position:relative;
+    background:linear-gradient(180deg,var(--ink-3),var(--ink-2));
+    border:1px solid var(--line-strong);
+    border-radius:18px;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.65);
+    overflow:hidden;
+  }
+  .console-bar{
+    display:flex; align-items:center; gap:8px;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,0.02);
+  }
+  .console-bar span{ width:9px; height:9px; border-radius:50%; background:var(--line-strong); }
+  .console-bar span:nth-child(1){ background:#FF5F57; }
+  .console-bar span:nth-child(2){ background:#FEBC2E; }
+  .console-bar span:nth-child(3){ background:var(--go); }
+  .console-bar .console-title{
+    margin-left:8px; font-family:var(--font-mono); font-size:11.5px; color:var(--slate);
+  }
+  .console-body{ padding:26px 24px 28px; }
+  .console-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:14px 0; border-bottom:1px dashed var(--line);
+  }
+  .console-row:last-child{ border-bottom:none; }
+  .console-label{ font-size:13px; color:var(--slate); }
+  .console-value{
+    font-family:var(--font-mono); font-weight:600; font-size:20px;
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .console-value .up{ color:var(--go); font-size:12.5px; }
+  .console-value .down{ color:var(--amber); font-size:12.5px; }
+  .console-note{
+    margin-top:18px; font-family:var(--font-mono); font-size:11px; color:var(--slate);
+    opacity:.75;
+  }
+  .signal-strip{
+    height:5px; width:100%;
+    background:linear-gradient(90deg, var(--go), var(--amber));
+  }
+
+  /* start-line divider */
+  .startline{
+    display:flex; align-items:center; gap:10px;
+    margin:64px 0;
+  }
+  .startline .flag{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.14em;
+    color:var(--slate); text-transform:uppercase; white-space:nowrap;
+  }
+  .startline .track{
+    flex:1; height:1px;
+    background:repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px);
+  }
+
+  /* ---------- value chips ---------- */
+  .chips{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  }
+  .chip{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    background:var(--ink-2);
+  }
+  .chip .chip-num{
+    font-family:var(--font-mono); font-weight:700; font-size:26px; color:var(--go);
+    margin-bottom:8px;
+  }
+  .chip p{ color:var(--slate); font-size:14.5px; }
+
+  /* ---------- section shell ---------- */
+  section{ padding:26px 0; }
+  .section-head{ max-width:620px; margin-bottom:44px; }
+  .section-head h2{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(28px, 3vw, 38px);
+    letter-spacing:-0.01em;
+    margin-top:14px;
+    line-height:1.15;
+  }
+  .section-head p{ color:var(--slate); margin-top:14px; font-size:16px; }
+
+  /* ---------- problem list ---------- */
+  .pain-grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+  }
+  .pain{
+    background:var(--ink);
+    padding:28px 26px;
+    display:flex; gap:16px;
+  }
+  .pain svg{ flex-shrink:0; margin-top:3px; }
+  .pain h3{ font-size:16px; font-weight:600; margin-bottom:6px; }
+  .pain p{ color:var(--slate); font-size:14.5px; }
+
+  /* ---------- services ---------- */
+  .services-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:18px;
+  }
+  .service-card{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 22px;
+    background:linear-gradient(180deg, var(--ink-2), var(--ink));
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .service-card:hover{ border-color:var(--line-strong); transform:translateY(-3px); }
+  .service-card .tag{
+    font-family:var(--font-mono); font-size:11px; color:var(--amber); letter-spacing:.08em;
+  }
+  .service-card h3{
+    font-family:var(--font-display); font-weight:600; font-size:18px;
+    margin:12px 0 10px;
+  }
+  .service-card p{ font-size:14px; color:var(--slate); }
+
+  /* ---------- process / laps ---------- */
+  .laps{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    position:relative;
+  }
+  .laps::before{
+    content:"";
+    position:absolute; top:22px; left:0; right:0; height:1px;
+    background:repeating-linear-gradient(90deg, var(--line-strong) 0 10px, transparent 10px 20px);
+    z-index:0;
+  }
+  .lap{
+    position:relative; z-index:1;
+    padding-right:20px;
+  }
+  .lap-marker{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--ink-2); border:1px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-weight:600; font-size:13px; color:var(--go);
+    margin-bottom:20px;
+  }
+  .lap:first-child .lap-marker{ background:var(--go); color:var(--ink); border-color:var(--go); }
+  .lap h3{ font-family:var(--font-display); font-size:16.5px; font-weight:600; margin-bottom:8px; }
+  .lap p{ font-size:14px; color:var(--slate); }
+
+  /* ---------- testimonials ---------- */
+  .testi-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  }
+  .testi{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px;
+    background:var(--ink-2);
+    display:flex; flex-direction:column; gap:18px;
+  }
+  .testi .stat-line{
+    font-family:var(--font-mono); color:var(--go); font-size:13px; font-weight:600;
+  }
+  .testi p.quote{ font-size:15px; color:var(--paper); line-height:1.55; }
+  .testi .who{ display:flex; align-items:center; gap:10px; margin-top:auto; }
+  .testi .avatar{
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg, var(--go), var(--amber));
+  }
+  .testi .who-name{ font-size:13.5px; font-weight:600; }
+  .testi .who-role{ font-size:12px; color:var(--slate); }
+  .editable-note{
+    margin-top:18px; font-family:var(--font-mono); font-size:11.5px; color:var(--amber); opacity:.85;
+  }
+
+  /* ---------- final CTA / form ---------- */
+  .cta-final{
+    position:relative;
+    border-radius:24px;
+    border:1px solid var(--line-strong);
+    background:linear-gradient(160deg, var(--ink-2) 0%, var(--ink) 70%);
+    padding:56px;
+    overflow:hidden;
+  }
+  .cta-final-inner{
+    display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; position:relative; z-index:1;
+  }
+  .cta-final h2{
+    font-family:var(--font-display); font-weight:700;
+    font-size:clamp(26px,3vw,34px); line-height:1.15; margin-top:14px;
+  }
+  .cta-final p{ color:var(--slate); margin-top:14px; font-size:15.5px; max-width:420px; }
+
+  form{ display:flex; flex-direction:column; gap:14px; }
+  .field label{
+    display:block; font-size:12.5px; color:var(--slate); margin-bottom:6px;
+    font-family:var(--font-mono); letter-spacing:.03em;
+  }
+  .field input, .field select{
+    width:100%;
+    background:var(--ink);
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    padding:12px 14px;
+    color:var(--paper);
+    font-size:14.5px;
+    font-family:var(--font-body);
+    transition:border-color .2s ease;
+  }
+  .field input:focus, .field select:focus{ border-color:var(--go); outline:none; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .submit-btn{
+    margin-top:6px;
+    width:100%;
+    background:var(--go); color:var(--ink);
+    font-weight:700; font-size:15.5px;
+    padding:15px; border-radius:10px; border:none;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .submit-btn:hover{ transform:translateY(-1px); box-shadow:0 14px 34px -10px rgba(0,230,118,.55); }
+  .form-note{ font-size:12px; color:var(--slate); text-align:center; }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:40px 0 34px;
+    margin-top:40px;
+  }
+  .footer-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
+  .footer-links{ display:flex; gap:26px; }
+  .footer-links a{ font-size:13.5px; color:var(--slate); }
+  .footer-links a:hover{ color:var(--paper); }
+  .copyright{ font-size:12.5px; color:var(--slate); font-family:var(--font-mono); }
+
+  /* ---------- reveal on scroll ---------- */
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .reveal{ opacity:1; transform:none; transition:none; }
+    .btn-go .pulse{ animation:none; }
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 980px){
+    .hero-inner{ grid-template-columns:1fr; }
+    .chips{ grid-template-columns:1fr; }
+    .pain-grid{ grid-template-columns:1fr; }
+    .services-grid{ grid-template-columns:repeat(2,1fr); }
+    .laps{ grid-template-columns:repeat(2,1fr); row-gap:32px; }
+    .laps::before{ display:none; }
+    .testi-grid{ grid-template-columns:1fr; }
+    .cta-final-inner{ grid-template-columns:1fr; }
+    .nav-links{ display:none; }
+  }
+  @media (max-width: 620px){
+    .wrap{ padding:0 20px; }
+    nav{ padding:16px 20px; }
+    .services-grid{ grid-template-columns:1fr; }
+    .field-row{ grid-template-columns:1fr; }
+    .cta-final{ padding:30px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <div class="logo">Start<span class="dot">Go</span></div>
+    <div class="nav-links">
+      <a href="#servicos">Serviços</a>
+      <a href="#processo">Processo</a>
+      <a href="#resultados">Resultados</a>
+    </div>
+    <a href="#form" class="nav-cta">Falar com a gente</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="grid-texture"></div>
+    <div class="wrap hero-inner">
+      <div>
+        <span class="eyebrow">Performance para e-commerce em Angola</span>
+        <h1>A largada que sua loja<br>estava <em>à espera.</em></h1>
+        <p class="lede">A Start Go entra no tráfego, na conversão e nos dados da sua loja para tirar o negócio do zero a zero e colocar a vender todos os dias — não só no dia da promoção.</p>
+        <div class="cta-row">
+          <a href="#form" class="btn-go"><span class="pulse"></span> Quero minha análise gratuita</a>
+          <a href="#processo" class="link-ghost">Ver como funciona</a>
+        </div>
+      </div>
+
+      <div class="console reveal">
+        <div class="console-bar">
+          <span></span><span></span><span></span>
+          <span class="console-title">painel-da-loja.startgo</span>
+        </div>
+        <div class="console-body">
+          <div class="console-row">
+            <span class="console-label">ROAS médio</span>
+            <span class="console-value" data-count data-target="4.8" data-suffix="x">0x <span class="up">↑</span></span>
+          </div>
+          <div class="console-row">
+            <span class="console-label">Taxa de conversão</span>
+            <span class="console-value" data-count data-target="3.6" data-suffix="%">0% <span class="up">↑</span></span>
+          </div>
+          <div class="console-row">
+            <span class="console-label">Custo por aquisição</span>
+            <span class="console-value" data-count data-target="3200" data-prefix="Kz ">Kz 0 <span class="down">↓</span></span>
+          </div>
+          <div class="console-row">
+            <span class="console-label">Ticket médio</span>
+            <span class="console-value" data-count data-target="18500" data-prefix="Kz ">Kz 0 <span class="up">↑</span></span>
+          </div>
+          <p class="console-note">// simulação ilustrativa de painel — números reais variam por loja</p>
+        </div>
+        <div class="signal-strip"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="startline"><span class="flag">largada</span><span class="track"></span><span class="flag">chegada</span></div>
+  </div>
+
+  <!-- VALUE CHIPS -->
+  <section>
+    <div class="wrap chips reveal">
+      <div class="chip">
+        <div class="chip-num">01</div>
+        <p>Tráfego pago que é acompanhado toda semana, não configurado e esquecido.</p>
+      </div>
+      <div class="chip">
+        <div class="chip-num">02</div>
+        <p>Página de produto e checkout otimizados para quem já quer comprar.</p>
+      </div>
+      <div class="chip">
+        <div class="chip-num">03</div>
+        <p>Um painel simples pra você ver o que está funcionando, sem depender de planilha.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section id="dores">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">O ciclo</span>
+        <h2>Você reconhece esse ciclo?</h2>
+        <p>A maioria dos donos de e-commerce que conhecemos não tem falta de esforço. Tem falta de tempo e de um sistema que junte tráfego, conversão e dados numa direção só.</p>
+      </div>
+      <div class="pain-grid reveal">
+        <div class="pain">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FFB300" stroke-width="1.6"/><path d="M12 7v6l4 2" stroke="#FFB300" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div>
+            <h3>Anúncio que gira sozinho</h3>
+            <p>Campanha configurada uma vez e nunca mais revisada, gastando verba sem direção.</p>
+          </div>
+        </div>
+        <div class="pain">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M4 15l4-4 3 3 6-6" stroke="#FFB300" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <h3>Visita alta, venda baixa</h3>
+            <p>O tráfego chega, mas se perde entre a página de produto e o carrinho.</p>
+          </div>
+        </div>
+        <div class="pain">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="#FFB300" stroke-width="1.6"/><path d="M8 12h8M8 16h5" stroke="#FFB300" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div>
+            <h3>Decisão no achismo</h3>
+            <p>Sem um painel claro, cada decisão de verba vira uma aposta.</p>
+          </div>
+        </div>
+        <div class="pain">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21c-4-4-7-7.5-7-11a7 7 0 0 1 14 0c0 3.5-3 7-7 11z" stroke="#FFB300" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          <div>
+            <h3>Sem tempo pra tocar tudo</h3>
+            <p>Fornecedor, estoque, atendimento, anúncio — e a loja fica em segundo plano.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="servicos">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">O que fazemos</span>
+        <h2>Quatro frentes, uma direção só.</h2>
+        <p>Cada área conversa com a outra — o que aprendemos no anúncio ajusta a página, e o que vemos no painel ajusta o anúncio.</p>
+      </div>
+      <div class="services-grid reveal">
+        <div class="service-card">
+          <span class="tag">TRÁFEGO</span>
+          <h3>Mídia paga</h3>
+          <p>Meta Ads e Google Ads geridos com teste e ajuste constante, focados em ROAS real.</p>
+        </div>
+        <div class="service-card">
+          <span class="tag">CONVERSÃO</span>
+          <h3>CRO &amp; loja</h3>
+          <p>Página de produto, checkout e ofertas revisados pra transformar visita em venda.</p>
+        </div>
+        <div class="service-card">
+          <span class="tag">RETENÇÃO</span>
+          <h3>Email &amp; SMS</h3>
+          <p>Recuperação de carrinho e fluxos de recompra pra vender pra quem já te conhece.</p>
+        </div>
+        <div class="service-card">
+          <span class="tag">DADOS</span>
+          <h3>Painel &amp; relatório</h3>
+          <p>Métricas que importam, num painel simples, atualizado toda semana.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="processo">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Como funciona</span>
+        <h2>Da largada à chegada, em quatro etapas.</h2>
+        <p>Sem contrato eterno e sem caixa-preta: você acompanha cada etapa com a gente.</p>
+      </div>
+      <div class="laps reveal">
+        <div class="lap">
+          <div class="lap-marker">01</div>
+          <h3>Largada</h3>
+          <p>Diagnóstico completo da loja: anúncios, página, checkout e dados atuais.</p>
+        </div>
+        <div class="lap">
+          <div class="lap-marker">02</div>
+          <h3>1ª volta</h3>
+          <p>Ajuste de estrutura: campanhas, tracking e páginas prontos pra performar.</p>
+        </div>
+        <div class="lap">
+          <div class="lap-marker">03</div>
+          <h3>2ª volta</h3>
+          <p>Otimização contínua com testes semanais guiados pelo painel de dados.</p>
+        </div>
+        <div class="lap">
+          <div class="lap-marker">04</div>
+          <h3>Chegada</h3>
+          <p>Escala do que funciona, com relatório claro do que foi investido e retornado.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="resultados">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Resultados</span>
+        <h2>O que donos de loja dizem depois da 1ª volta.</h2>
+      </div>
+      <div class="testi-grid reveal">
+        <div class="testi">
+          <span class="stat-line">Moda feminina</span>
+          <p class="quote">"Em oito semanas paramos de adivinhar. Hoje sabemos exatamente qual campanha trouxe cada venda."</p>
+          <div class="who">
+            <div class="avatar"></div>
+            <div>
+              <div class="who-name">Kianda Sebastião</div>
+              <div class="who-role">Fundadora, loja de moda</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi">
+          <span class="stat-line">Casa &amp; decoração</span>
+          <p class="quote">"O checkout deixou de vazar cliente. Só essa mudança já pagou o investimento do mês."</p>
+          <div class="who">
+            <div class="avatar"></div>
+            <div>
+              <div class="who-name">Edson Bumba</div>
+              <div class="who-role">Sócio, loja de decoração</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi">
+          <span class="stat-line">Suplementos</span>
+          <p class="quote">"Finalmente entendo o painel sem precisar de um analista do meu lado o tempo todo."</p>
+          <div class="who">
+            <div class="avatar"></div>
+            <div>
+              <div class="who-name">Ricardo Muhongo</div>
+              <div class="who-role">Dono, e-commerce de suplementos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="editable-note reveal">// depoimentos de exemplo — substitua por casos reais de clientes da Start Go</p>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section id="form">
+    <div class="wrap">
+      <div class="cta-final reveal">
+        <div class="grid-texture"></div>
+        <div class="cta-final-inner">
+          <div>
+            <span class="eyebrow">Bora começar</span>
+            <h2>Peça sua análise gratuita e veja onde a loja está travando.</h2>
+            <p>Em até 2 dias úteis, você recebe um raio-x da sua loja: tráfego, conversão e um plano de próximos passos — sem compromisso.</p>
+          </div>
+          <form>
+            <div class="field-row">
+              <div class="field">
+                <label for="nome">Nome</label>
+                <input id="nome" name="nome" type="text" placeholder="Seu nome" required>
+              </div>
+              <div class="field">
+                <label for="whatsapp">WhatsApp</label>
+                <input id="whatsapp" name="whatsapp" type="tel" placeholder="+244 923 000 000" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="voce@sualoja.co.ao" required>
+            </div>
+            <div class="field">
+              <label for="site">Link da loja</label>
+              <input id="site" name="site" type="url" placeholder="https://sualoja.co.ao">
+            </div>
+            <div class="field">
+              <label for="faturamento">Faturamento mensal atual</label>
+              <select id="faturamento" name="faturamento">
+                <option>Até Kz 500 mil</option>
+                <option>Kz 500 mil a Kz 2 milhões</option>
+                <option>Kz 2 milhões a Kz 8 milhões</option>
+                <option>Acima de Kz 8 milhões</option>
+              </select>
+            </div>
+            <button type="submit" class="submit-btn"><span class="pulse" style="background:var(--ink)"></span> Quero minha análise gratuita</button>
+            <p class="form-note" id="form-status">Sem spam. Sem letra miúda. Você fala com uma pessoa de verdade.</p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div class="logo">Start<span class="dot">Go</span></div>
+    <div class="footer-links">
+      <a href="#servicos">Serviços</a>
+      <a href="#processo">Processo</a>
+      <a href="#resultados">Resultados</a>
+      <a href="#form">Contato</a>
+    </div>
+    <div class="copyright">© 2026 Start Go</div>
+  </div>
+</footer>
+
+<script>
+  // reveal on scroll
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el=>io.observe(el));
+
+  // console counters
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function animateCount(el){
+    const target = parseFloat(el.dataset.target);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    const isDecimal = target % 1 !== 0;
+    const symbolEl = el.querySelector('span');
+    const symbolHTML = symbolEl ? symbolEl.outerHTML : '';
+    if(prefersReduced){
+      const formatted = isDecimal ? target.toFixed(1) : target.toLocaleString('pt-PT');
+      el.innerHTML = prefix + formatted + suffix + ' ' + symbolHTML;
+      return;
+    }
+    let start = 0;
+    const duration = 1400;
+    const startTime = performance.now();
+    function tick(now){
+      const p = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const val = target * eased;
+      const formatted = isDecimal ? val.toFixed(1) : Math.round(val).toLocaleString('pt-PT');
+      el.innerHTML = prefix + formatted + suffix + ' ' + symbolHTML;
+      if(p < 1){ requestAnimationFrame(tick); }
+    }
+    requestAnimationFrame(tick);
+  }
+  const counters = document.querySelectorAll('[data-count]');
+  const cio = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ animateCount(e.target); cio.unobserve(e.target); }
+    });
+  }, { threshold: 0.4 });
+  counters.forEach(el=>cio.observe(el));
+
+  // ---------- Envio do formulário para o Google Sheets ----------
+  // 1. Siga as instruções no final deste ficheiro (comentário abaixo) para criar
+  //    o Google Apps Script e publicar como Web App.
+  // 2. Cole o URL gerado aqui, substituindo o texto entre aspas:
+  const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwGObqDI6qhmedMbsFQ2vswyVS3xEfBsuiTQzTDLzNXrpYjYunZ1WslbSCMRkRI7OkyHQ/exec";
+
+  document.querySelector('form').addEventListener('submit', function(e){
+    e.preventDefault();
+    const form = this;
+    const btn = form.querySelector('.submit-btn');
+    const status = form.querySelector('#form-status');
+    const originalBtnHTML = btn.innerHTML;
+
+    if(GOOGLE_SHEETS_URL.includes('COLE_AQUI')){
+      status.textContent = 'Ligação ao Google Sheets ainda não configurada — veja as instruções no código.';
+      status.style.color = 'var(--amber)';
+      return;
+    }
+
+    const data = {
+      nome: form.nome.value,
+      whatsapp: form.whatsapp.value,
+      email: form.email.value,
+      site: form.site.value,
+      faturamento: form.faturamento.value,
+      data: new Date().toISOString()
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = 'A enviar...';
+
+    fetch(GOOGLE_SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Apps Script Web Apps não devolvem cabeçalhos CORS
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(data)
+    })
+    .then(function(){
+      btn.innerHTML = '✓ Recebemos! Te chamamos em breve.';
+      btn.style.background = 'var(--go)';
+      status.textContent = 'Obrigado! A nossa equipa entra em contacto em breve.';
+      status.style.color = 'var(--slate)';
+      form.reset();
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.innerHTML = originalBtnHTML;
+      status.textContent = 'Não foi possível enviar agora. Tenta novamente ou contacta-nos por WhatsApp.';
+      status.style.color = 'var(--amber)';
+    });
+  });
+  // ----------------------------------------------------------------
+  // COMO LIGAR ESTE FORMULÁRIO A UMA GOOGLE SHEET (grátis, sem servidor):
+  //
+  // 1. Cria uma Google Sheet nova. Na 1ª linha, coloca os cabeçalhos:
+  //    nome | whatsapp | email | site | faturamento | data
+  //
+  // 2. No menu da Sheet: Extensões > Apps Script.
+  //
+  // 3. Apaga o código de exemplo e cola isto:
+  //
+  //    function doPost(e) {
+  //      const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  //      const data = JSON.parse(e.postData.contents);
+  //      sheet.appendRow([data.nome, data.whatsapp, data.email, data.site, data.faturamento, data.data]);
+  //      return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+  //        .setMimeType(ContentService.MimeType.JSON);
+  //    }
+  //
+  // 4. Clica em "Implementar" (Deploy) > "Nova implementação".
+  //    - Tipo: "Aplicação Web" (Web app)
+  //    - Executar como: a tua conta
+  //    - Quem tem acesso: "Qualquer pessoa" (Anyone)
+  //
+  // 5. Copia o URL gerado (termina em /exec) e cola na constante
+  //    GOOGLE_SHEETS_URL no topo deste bloco de script.
+  //
+  // 6. Guarda o ficheiro. Pronto — cada envio do formulário vira uma
+  //    linha nova na tua Google Sheet.
+</script>
+
+</body>
+</html>
